@@ -7,25 +7,23 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 
 def _local_contrast_window(window):
-    # Local contrast for center pixel in a NxN window: max - min
-    return np.max(window) - np.min(window)
+    # Local contrast as mean absolute difference between center and neighbors
+    center = window[len(window)//2]
+    neighbors = np.delete(window, len(window)//2)
+    g_nb = np.mean(neighbors)
+    return abs(center - g_nb)
 
 def compute_local_contrast(image, size=3):
-    # Compute local contrast map using an NxN neighborhood (default 3x3).
+    # Compute local contrast map using the given formula
     return generic_filter(image, _local_contrast_window, size=size)
 
 def compute_lc_stats(lc_map):
-    # Return basic statistics for the local contrast map (floats in [0,1]).
     mn = float(np.min(lc_map))
     mx = float(np.max(lc_map))
     mean = float(np.mean(lc_map))
     median = float(np.median(lc_map))
     std = float(np.std(lc_map))
     return {"min": mn, "max": mx, "mean": mean, "median": median, "std": std}
-
-def scale_to_255(value):
-    # Scale a float in [0,1] to integer in [0,255]
-    return int(np.clip(round(value * 255.0), 0, 255))
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Compute local contrast map (8-connected).")
@@ -37,19 +35,14 @@ if __name__ == "__main__":
     img = img_as_float(io.imread(args.image, as_gray=True))
     lc_map = compute_local_contrast(img, size=args.size)
 
-    # Compute and print numeric stats for the local contrast map
-    stats = compute_lc_stats(lc_map)
-    s_min = scale_to_255(stats["min"])
-    s_max = scale_to_255(stats["max"])
-    s_mean = scale_to_255(stats["mean"])
-    s_median = scale_to_255(stats["median"])
-    s_std = int(round(stats["std"] * 255.0))
+    # Convert to grayscale units (0–255)
+    lc_map_255 = lc_map * 255
 
-    print("Local contrast stats (float 0..1): "
-          f"min={stats['min']:.6f}, max={stats['max']:.6f}, mean={stats['mean']:.6f}, "
-          f"median={stats['median']:.6f}, std={stats['std']:.6f}")
-    print("Local contrast stats (scaled 0..255): "
-          f"min={s_min}, max={s_max}, mean≈{s_mean}, median={s_median}, std≈{s_std}")
+    # Compute stats
+    stats = compute_lc_stats(lc_map_255)
+    print(f"Local contrast stats (0–255 scale): "
+          f"min={stats['min']:.2f}, max={stats['max']:.2f}, mean={stats['mean']:.2f}, "
+          f"median={stats['median']:.2f}, std={stats['std']:.2f}")
 
     plt.figure(figsize=(10,4))
     plt.subplot(1,2,1)
@@ -58,19 +51,14 @@ if __name__ == "__main__":
     plt.axis("off")
 
     plt.subplot(1,2,2)
-    # Show local contrast in grayscale (values in [0,1])
-    plt.imshow(lc_map, cmap="gray", vmin=0, vmax=1)
+    plt.imshow(lc_map, cmap="gray", vmin=0, vmax=np.max(lc_map))
     plt.title(f"Local contrast (size={args.size}x{args.size})")
     plt.axis("off")
 
-    # If backend is interactive, show; otherwise save to file to avoid FigureCanvasAgg warning.
     backend = mpl.get_backend()
     if backend in mpl.rcsetup.interactive_bk:
         plt.show()
     else:
-        out_path = args.out
-        if not out_path:
-            base = os.path.splitext(args.image)[0].replace("/", "_").replace("\\", "_")
-            out_path = f"output/{base}_local_contrast_size{args.size}.png"
+        out_path = args.out or f"output_local_contrast_{args.size}.png"
         plt.savefig(out_path, bbox_inches='tight', dpi=150)
         print(f"Saved figure to {out_path} (backend: {backend})")
