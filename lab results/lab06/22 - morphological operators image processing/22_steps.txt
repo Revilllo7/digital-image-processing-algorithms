@@ -1,0 +1,27 @@
+1. Rotate by -15 degrees
+2. Make sure the image is 8 bits and binarise.
+3. Take the most eroded looking "1" for your structural element.
+
+It should look like this roughly:
+0 0 0 0
+0 1 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 * 1 0
+0 0 0 0
+
+Because we have an "encasing" of 0s, it won't catch "k's" or "l's" or edges, or lines from the grid.
+It will not catch the (b) due to difference in length.
+
+IT WILL however miss a singular "1" cause it got flipped horizontally and vertically during binarisation.
+4. To add it, just change the structural element and erode with it.
+5. Add both images in image calculator.
+6. Dilate with a stample to get the "1's" back or count the number of black pixels to get the count.
