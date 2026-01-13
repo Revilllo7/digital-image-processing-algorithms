@@ -7,6 +7,6 @@ assert img is not None, "file could not be read, check with os.path.exists()"
 edges = cv.Canny(img,100,200)
  
 # save image
-cv.imwrite('output.png', edges)
+cv.imwrite('output/output.png', edges)
  
 plt.show()
